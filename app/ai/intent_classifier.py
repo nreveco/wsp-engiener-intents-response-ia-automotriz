@@ -1,0 +1,92 @@
+import logging
+from typing import List
+
+from openai import AsyncOpenAI
+
+from app.config import settings
+from app.intents.definitions import ExtractedIntent, Intent
+from app.prompts.templates import build_intent_prompt
+
+logger = logging.getLogger(__name__)
+client = AsyncOpenAI(
+    base_url=settings.ollama_base_url,
+    api_key=settings.ollama_api_key,  # Usa la API key del config
+    timeout=30.0,  # Groq es ultra rápido, 30s es más que suficiente
+    max_retries=2,  # Groq es confiable, permitir 2 reintentos
+)
+
+
+async def classify_intent(
+    message: str,
+    business_name: str,
+    business_type: str,
+    categories: List[str],
+    conversation_history: List[dict] | None = None,
+) -> ExtractedIntent:
+    """
+    Paso 1 del pipeline.
+    Envía el mensaje a Ollama y devuelve la intención + entidades extraídas.
+    Usa JSON mode + validación Pydantic (compatible con cualquier modelo Ollama).
+    """
+    system_prompt = build_intent_prompt(business_name, business_type, categories)
+
+    messages = [{"role": "system", "content": system_prompt}]
+
+    # Incluir últimas 4 interacciones como contexto (ahorra tokens)
+    if conversation_history:
+        for turn in conversation_history[-4:]:
+            messages.append({"role": turn["role"], "content": turn["content"]})
+
+    messages.append({"role": "user", "content": message})
+    logger.info(
+        "Calling intent classifier model",
+        extra={
+            "business_name": business_name,
+            "business_type": business_type,
+            "categories": categories,
+            "message_preview": message[:120],
+        },
+    )
+
+    try:
+        response = await client.chat.completions.create(
+            model=settings.ollama_model,
+            messages=messages,
+            response_format={"type": "json_object"},
+            max_tokens=300,  # Suficiente para generar el JSON completo del ExtractedIntent
+            temperature=0,
+        )
+        raw = response.choices[0].message.content
+        logger.info(
+            "Raw response from Ollama intent classifier",
+            extra={
+                "raw_response_full": raw,
+                "model": settings.ollama_model,
+                "base_url": settings.ollama_base_url,
+            },
+        )
+        result = ExtractedIntent.model_validate_json(raw)
+        logger.info(
+            "Intent classification completed",
+            extra={
+                "intent": result.intent.value,
+                "legal_area": result.legal_area,
+                "legal_matter": result.legal_matter,
+                "urgency": result.urgency,
+                "is_detained": result.is_detained,
+            },
+        )
+        return result
+    except Exception as exc:
+        logger.error(
+            "Error clasificando intent - returning UNKNOWN",
+            exc_info=exc,
+            extra={
+                "business_name": business_name,
+                "message_preview": message[:120],
+                "raw_response": raw if 'raw' in locals() else None,
+                "model": settings.ollama_model,
+                "base_url": settings.ollama_base_url,
+            },
+        )
+        return ExtractedIntent(intent=Intent.UNKNOWN)
