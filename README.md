@@ -167,6 +167,35 @@ python -m pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
+### Inicializar PostgreSQL en Railway
+
+El archivo [`railway-init.sql`](railway-init.sql) crea todas las tablas y tipos
+usados por la aplicación, incluyendo conversaciones, mensajes, configuración
+automotriz, vehículos, multimedia y los módulos legales heredados.
+
+> **Advertencia:** el script elimina primero las tablas y tipos del mismo esquema.
+> Ejecútalo solamente en una base nueva o cuando aceptes perder los datos existentes.
+
+Desde el servicio PostgreSQL de Railway abre el editor SQL, pega el contenido de
+`railway-init.sql` y ejecútalo completo. Después, desde el servicio de la aplicación,
+ejecuta el seed automotriz en Python o pega [`seed_automotive.sql`](seed_automotive.sql)
+en el editor SQL de Railway:
+
+```powershell
+python seed_automotive.py
+```
+
+Alternativamente:
+
+```text
+1. Ejecutar railway-init.sql
+2. Ejecutar seed_automotive.sql
+```
+
+El seed crea `Automotora Ejecutiva`, la configuración financiera y los vehículos
+demo. No se deben guardar tokens reales dentro del script SQL; configúralos como
+variables de entorno del servicio de aplicación en Railway.
+
 ## Seed automotriz
 
 El seed crea una automotora demo con:
