@@ -64,7 +64,7 @@ htmlcov/
 
 # Models (si decides usar Ollama local)
 *.gguf
-models/
+/models/
 
 # Media files (WhatsApp downloads)
 media/
