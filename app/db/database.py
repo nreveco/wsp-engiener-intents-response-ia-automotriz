@@ -72,7 +72,6 @@ async def init_db():
 
                 if exists:
                     values = await _get_businesstype_enum_values(conn)
-                    logger.info("Enum 'businesstype' actual: %s", values)
                     for business_type in ("law_firm", "automotive"):
                         if business_type not in values:
                             logger.info("Agregando valor '%s' a enum 'businesstype'", business_type)
@@ -94,8 +93,7 @@ async def init_db():
                     "SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'businesstype')"
                 ))
                 if exists_after:
-                    values_after = await _get_businesstype_enum_values(conn)
-                    logger.info("Enum 'businesstype' después de init_db: %s", values_after)
+                    logger.info("Esquema automotriz verificado correctamente")
                 else:
                     logger.warning("Después de create_all, el enum 'businesstype' sigue sin existir")
             

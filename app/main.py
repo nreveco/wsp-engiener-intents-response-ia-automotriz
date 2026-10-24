@@ -22,8 +22,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="WhatsApp AI Automation Engine",
-    description="Motor de automatización WhatsApp + IA para PyMEs — restaurantes, talleres, clínicas y más.",
+    title="Automotora Ejecutiva - WhatsApp AI",
+    description="Asistente automotriz para vehículos, financiamiento, pruebas de manejo y tasaciones.",
     version="1.0.0",
     lifespan=lifespan,
 )
